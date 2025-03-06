@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ما وراء التجربة</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background: url('https://i.postimg.cc/jWnpWnJN/image.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 50px;
+        }
+        button {
+            background: gold;
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            border-radius: 5px;
+            display: block;
+            width: 100%;
+            margin-top: 5px;
+        }
+        .timer {
+            font-size: 20px;
+            color: yellow;
+            margin-top: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="start-screen">
+        <h1>🔎 ما وراء التجربة</h1>
+        <p>أدخل اسمك لبدء المغامرة</p>
+        <input type="text" id="playerName" placeholder="أدخل اسمك">
+        <button onclick="startGame()">ابدأ</button>
+    </div>
+
+    <div class="container hidden" id="question-screen">
+        <h2 id="question-text"></h2>
+        <div id="choices"></div>
+        <div class="timer hidden" id="timer"></div>
+        <input type="text" id="text-answer" class="hidden" placeholder="اكتب إجابتك هنا">
+        <button onclick="submitAnswer()" class="hidden" id="submit-answer">إرسال</button>
+    </div>
+
+    <div class="container hidden" id="final-screen">
+        <h2 id="final-message"></h2>
+        <p id="final-score"></p>
+        <p id="final-verse"></p>
+        <h3>HFT theater 🎭♥️</h3>
+    </div>
+
+    <script>
+        let playerName = "";
+        let currentQuestionIndex = 0;
+        let playerScore = 0;
+        let timer;
+        let timeLeft;
+
+        const questions = [
+            { type: "mcq", text: "ايه المغزي الاساسي من تجربة المسيح في البرية؟", choices: ["يوري قوته للعالم", "يحضر نفسه للخدمة", "يثبت انه ابن ربنا", "الاعتماد الكلي علي ربنا"], answer: "الاعتماد الكلي علي ربنا" },
+            { type: "mcq", text: "ابليس لما قال للمسيح يحول الحجارة لخبز. كان عاوز ايه؟", choices: ["يبعده عن خطة ربنا", "يقنعه بكلامه", "يخليه يركز علي احتياجاته", "يختبر قوته"], answer: "يبعده عن خطة ربنا" },
+            { type: "mcq", text: "لما ابليس طلب من المسيح يرمي نفسه من الهيكل. المسيح رفض ليه؟", choices: ["لانه مش محتاج حماية", "لانه عارف ان ابليس بيكذب", "لان المعجزات مش دليل الايمان", "لان الايمان مش معناه اختبار ربنا"], answer: "لان الايمان مش معناه اختبار ربنا" },
+            { type: "mcq", text: "ايه اهم حاجة نتعلمها من تجربة المسيح في البرية؟", choices: ["نتجنب المشاكل خالص", "نطلب معجزة لما نحس بالضعف", "نواجه التجربة بقوتنا", "نثبت وقت التجربة"], answer: "نثبت وقت التجربة" },
+            { type: "mcq", text: "ازاي تجربة المسيح في البرية كانت جزء مهم من رسالته؟", choices: ["عشان يثبت انه اقوي من ابليس", "عشان الناس تفهم انه بيتحمل الالم", "عشان يتأكد انه مستعد للخدمة", "عشان يوضح ان الطاعة اهم من الراحة"], answer: "عشان يوضح ان الطاعة اهم من الراحة" },
+            { type: "text", text: "اكتب لنا تجربة مريت بها وقل لنا كيف تصرفت وحسيت بيد الله؟ ♥️" },
+            { type: "text", text: "في اللحظات اللي الدنيا فيها مقلوبة, ايه اللي بيساعدك تحس بالسكينة؟" },
+            { type: "text", text: "شاركنا بحاجة اتعلمتها من المواقف اللي حسيت فيها بالضعف او اليأس؟" },
+            { type: "text", text: "قول لنفسك حاجة حلوة محتاج حد يقولهالك؟" }
+        ];
+
+        function startGame() {
+            playerName = document.getElementById("playerName").value.trim();
+            if (playerName === "") {
+                alert("الرجاء إدخال اسمك للمتابعة");
+                return;
+            }
+            document.getElementById("start-screen").classList.add("hidden");
+            document.getElementById("question-screen").classList.remove("hidden");
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            clearInterval(timer);
+            if (currentQuestionIndex >= questions.length) {
+                endGame();
+                return;
+            }
+
+            const questionData = questions[currentQuestionIndex];
+            document.getElementById("question-text").innerText = questionData.text;
+            document.getElementById("choices").innerHTML = "";
+            document.getElementById("text-answer").classList.add("hidden");
+            document.getElementById("submit-answer").classList.add("hidden");
+            document.getElementById("timer").classList.add("hidden");
+
+            if (questionData.type === "mcq") {
+                document.getElementById("timer").classList.remove("hidden");
+                startTimer(20);
+
+                questionData.choices.forEach(choice => {
+                    const btn = document.createElement("button");
+                    btn.innerText = choice;
+                    btn.onclick = () => checkAnswer(choice, questionData.answer);
+                    document.getElementById("choices").appendChild(btn);
+                });
+            } else {
+                document.getElementById("text-answer").classList.remove("hidden");
+                document.getElementById("submit-answer").classList.remove("hidden");
+            }
+        }
+
+        function checkAnswer(choice, correctAnswer) {
+            clearInterval(timer);
+            if (choice === correctAnswer) {
+                alert("شطور يا كتكوت 🐥");
+                playerScore += 10;
+            } else {
+                alert("غلط وشوف السؤال اللي بعده عشان الوقت 👺");
+            }
+            nextQuestion();
+        }
+
+        function submitAnswer() {
+            clearInterval(timer);
+            alert("شكرا يا عسول 😘");
+            playerScore += 5;
+            nextQuestion();
+        }
+
+        function startTimer(seconds) {
+            timeLeft = seconds;
+            document.getElementById("timer").innerText = `⏳ الوقت المتبقي: ${timeLeft} ثانية`;
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById("timer").innerText = `⏳ الوقت المتبقي: ${timeLeft} ثانية`;
+                if (timeLeft === 0) {
+                    clearInterval(timer);
+                    alert("⏰ انتهى الوقت!");
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        function endGame() {
+            document.getElementById("question-screen").classList.add("hidden");
+            document.getElementById("final-screen").classList.remove("hidden");
+
+            document.getElementById("final-message").innerText = `اشطر ${playerName}😍♥️`;
+            document.getElementById("final-score").innerText = `درجتك: ${playerScore} نقطة`;
+            document.getElementById("final-verse").innerText = "وَكُونُوا عَلَى ثِقَةٍ بِأَنَّ امْتِحَانَ إِيمَانِكُمْ هَذَا يُنْتِجُ صَبْراً. يَعْقُوبَ ١:٣";
+        }
+    </script>
+
+</body>
+</html>
